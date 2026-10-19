@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>T9 Phone Word Finder</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  .key-btn {
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .key-btn:active { transform: scale(0.95); }
+</style>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen">
+
+<div class="max-w-3xl mx-auto p-4">
+  <h1 class="text-3xl font-bold text-center text-cyan-400 mb-1">T9 Phone Word Finder</h1>
+  <p class="text-center text-gray-400 mb-5 text-sm">Click digits to find all English words that can be spelled with those keys</p>
+
+  <div class="grid md:grid-cols-2 gap-5">
+    <!-- Keypad & Input -->
+    <div>
+      <!-- Display -->
+      <div class="bg-gray-800 rounded-xl p-4 mb-4">
+        <div class="flex items-center gap-2 mb-2">
+          <div id="digitDisplay"
+            class="flex-1 bg-gray-700 rounded-lg px-4 py-3 text-2xl font-mono tracking-widest text-cyan-300 min-h-[3rem]"
+            aria-label="Entered digits" aria-live="polite">
+          </div>
+          <button onclick="backspace()"
+            class="bg-red-800 hover:bg-red-700 rounded-lg px-3 py-2 text-xl key-btn"
+            aria-label="Backspace — remove last digit">⌫</button>
+          <button onclick="clearAll()"
+            class="bg-gray-600 hover:bg-gray-500 rounded-lg px-3 py-2 text-sm key-btn"
+            aria-label="Clear all digits">CLR</button>
+        </div>
+        <div class="text-xs text-gray-400">
+          Letters: <span id="lettersDisplay" class="text-gray-200 font-mono"></span>
+        </div>
+        <div class="text-sm mt-1">
+          <span id="matchCount" class="text-cyan-300 font-bold">0</span> words found
+        </div>
+      </div>
+
+      <!-- Keypad -->
+      <div class="grid grid-cols-3 gap-2">
+        <!-- Row 1 -->
+        <button onclick="pressKey(2)" class="key-btn bg-gray-700 hover:bg-gray-600 active:bg-gray-500 rounded-xl py-4 flex flex-col items-center transition" aria-label="Key 2: ABC">
+          <span class="text-2xl font-bold">2</span>
+          <span class="text-xs text-gray-400">ABC</span>
+        </button>
+        <button onclick="pressKey(3)" class="key-btn bg-gray-700 hover:bg-gray-600 active:bg-gray-500 rounded-xl py-4 flex flex-col items-center transition" aria-label="Key 3: DEF">
+          <span class="text-2xl font-bold">3</span>
+          <span class="text-xs text-gray-400">DEF</span>
+        </button>
+        <button onclick="pressKey(4)" class="key-btn bg-gray-700 hover:bg-gray-600 active:bg-gray-500 rounded-xl py-4 flex flex-col items-center transition" aria-label="Key 4: GHI">
+          <span class="text-2xl font-bold">4</span>
+          <span class="text-xs text-gray-400">GHI</span>
+        </button>
+        <!-- Row 2 -->
+        <button onclick="pressKey(5)" class="key-btn bg-gray-700 hover:bg-gray-600 active:bg-gray-500 rounded-xl py-4 flex flex-col items-center transition" aria-label="Key 5: JKL">
+          <span class="text-2xl font-bold">5</span>
+          <span class="text-xs text-gray-400">JKL</span>
+        </button>
+        <button onclick="pressKey(6)" class="key-btn bg-gray-700 hover:bg-gray-600 active:bg-gray-500 rounded-xl py-4 flex flex-col items-center transition" aria-label="Key 6: MNO">
+          <span class="text-2xl font-bold">6</span>
+          <span class="text-xs text-gray-400">MNO</span>
+        </button>
+        <button onclick="pressKey(7)" class="key-btn bg-gray-700 hover:bg-gray-600 active:bg-gray-500 rounded-xl py-4 flex flex-col items-center transition" aria-label="Key 7: PQRS">
+          <span class="text-2xl font-bold">7</span>
+          <span class="text-xs text-gray-400">PQRS</span>
+        </button>
+        <!-- Row 3 -->
+        <button onclick="pressKey(8)" class="key-btn bg-gray-700 hover:bg-gray-600 active:bg-gray-500 rounded-xl py-4 flex flex-col items-center transition" aria-label="Key 8: TUV">
+          <span class="text-2xl font-bold">8</span>
+          <span class="text-xs text-gray-400">TUV</span>
+        </button>
+        <button onclick="pressKey(9)" class="key-btn bg-gray-700 hover:bg-gray-600 active:bg-gray-500 rounded-xl py-4 flex flex-col items-center transition" aria-label="Key 9: WXYZ">
+          <span class="text-2xl font-bold">9</span>
+          <span class="text-xs text-gray-400">WXYZ</span>
+        </button>
+        <button onclick="pressKey(0)" class="key-btn bg-gray-600 hover:bg-gray-500 active:bg-gray-400 rounded-xl py-4 flex flex-col items-center transition opacity-50 cursor-not-allowed" disabled aria-label="Key 0: space (not used)">
+          <span class="text-2xl font-bold">0</span>
+          <span class="text-xs text-gray-500">—</span>
+        </button>
+      </div>
+
+      <div class="mt-3 text-xs text-gray-500 text-center">
+        You can also type digits 2–9 on your keyboard
+      </div>
+    </div>
+
+    <!-- Results -->
+    <div class="bg-gray-800 rounded-xl p-4 overflow-y-auto" style="max-height:520px">
+      <h2 class="font-semibold text-cyan-300 mb-3">Matching Words</h2>
+      <div id="results" class="text-sm text-gray-200">
+        <p class="text-gray-500 italic">Enter digits to find words…</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Example section -->
+  <div class="mt-5 bg-gray-800 rounded-xl p-4">
+    <h2 class="font-semibold text-cyan-300 mb-2">Try These Examples</h2>
+    <div class="flex flex-wrap gap-2">
+      <button onclick="loadExample('4663')" class="bg-gray-700 hover:bg-gray-600 rounded px-3 py-1 text-sm" aria-label="Try 4663">4663 (good/home/gone…)</button>
+      <button onclick="loadExample('843')" class="bg-gray-700 hover:bg-gray-600 rounded px-3 py-1 text-sm" aria-label="Try 843">843 (the/vie/…)</button>
+      <button onclick="loadExample('7664')" class="bg-gray-700 hover:bg-gray-600 rounded px-3 py-1 text-sm" aria-label="Try 7664">7664 (song/…)</button>
+      <button onclick="loadExample('22737')" class="bg-gray-700 hover:bg-gray-600 rounded px-3 py-1 text-sm" aria-label="Try 22737">22737 (acres/…)</button>
+      <button onclick="loadExample('3669')" class="bg-gray-700 hover:bg-gray-600 rounded px-3 py-1 text-sm" aria-label="Try 3669">3669 (enow/…)</button>
+      <button onclick="loadExample('46368')" class="bg-gray-700 hover:bg-gray-600 rounded px-3 py-1 text-sm" aria-label="Try 46368">46368 (hotel/…)</button>
+    </div>
+  </div>
+</div>
+
+<script>
+function escapeHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+const T9_MAP = {
+  '2':'abc','3':'def','4':'ghi','5':'jkl','6':'mno','7':'pqrs','8':'tuv','9':'wxyz'
+};
+
+// ~700+ common English words, 3–7 letters
+const WORD_LIST = [
+  // 3-letter
+  'ace','act','add','age','ago','aid','aim','air','all','and','ant','any','ape','apt','arc','are','ark','arm','art','ash','ask','ate','awe','axe',
+  'bad','bag','ban','bar','bat','bay','bed','bet','bid','big','bin','bit','bog','bow','box','boy','bud','bug','bun','bus','but','buy',
+  'cab','can','cap','car','cat','cod','cog','cop','cow','cry','cub','cup','cut',
+  'dab','dad','dam','day','den','dew','did','die','dig','dim','dip','dog','dot','dry','dub','dug','dun','duo',
+  'ear','eat','egg','ego','elf','elm','end','era','eve','ewe','eye',
+  'fan','far','fat','fax','fed','few','fig','fin','fit','fix','fly','fog','for','fox','fry','fun','fur',
+  'gap','gas','gel','gem','get','gin','gnu','god','got','gum','gun','gut','guy',
+  'had','ham','has','hat','hay','hen','her','him','hip','his','hit','hog','hop','hot','how','hug','hum','hut',
+  'icy','ill','imp','ink','ion','ivy',
+  'jab','jam','jar','jaw','jet','jog','joy','jug',
+  'keg','key','kid','kin','kit',
+  'lab','lag','lap','law','lax','lay','led','leg','let','lid','lip','lit','log','lot','low',
+  'mad','man','map','mat','may','men','met','mid','mix','mob','mod','mop','mud','mug','mum',
+  'nab','nag','nap','net','new','nod','nor','not','now','nun','nut',
+  'oak','oar','odd','off','oil','old','one','opt','orb','ore','our','out','owe','owl','own',
+  'pad','pal','pan','pap','pat','paw','pay','pea','peg','pen','pet','pie','pig','pin','pit','ply','pod','pop','pot','pow','pro','pub','pun','pup','pus','put',
+  'rag','ram','ran','rat','raw','ray','red','ref','rep','rev','rib','rid','rig','rim','rip','rob','rod','rot','row','rub','rug','rum','run','rut',
+  'sad','sag','sap','sat','saw','say','sea','set','sew','she','shy','sin','sip','sir','sit','six','ski','sky','sly','sob','son','sop','sow','soy','spa','spy','sty','sub','sue','sum','sun','sup',
+  'tab','tan','tap','tar','tax','tea','ten','the','tie','tin','tip','toe','ton','too','top','toy','try','tub','tug','two',
+  'urn','use',
+  'van','var','vat','via','vie','vow',
+  'wag','war','was','wax','web','wed','wet','who','why','wig','win','wit','woe','wok','won','woo','wow',
+  'yam','yap','yaw','yep','yet','yew','you',
+  'zap','zen','zip','zoo',
+  // 4-letter
+  'able','ache','acid','acre','afar','also','alto','arch','area','army','atom','aunt','auto','avid','away','awed','axes',
+  'back','bake','bale','ball','band','bane','bank','bare','bark','barn','base','bash','bass','bath','bead','beak','beam','bean','bear','beat','been','beer','bell','belt','bend','best','bike','bile','bill','bind','bird','bite','blot','blow','blue','blur','boar','boat','body','boil','bold','bolt','bond','bone','book','boom','boot','bore','born','both','bout','bowl','brag','bran','brew','brim','brow','bulk','bull','burn','burp','bush','busy',
+  'cafe','cage','cake','call','calm','came','camp','cane','care','cart','case','cash','cast','cave','cell','chat','chef','chin','chip','chop','clam','clap','clay','clip','club','clue','coal','coat','coil','coin','cold','colt','comb','come','cone','cook','cool','cope','copy','cord','core','cork','corn','cost','coup','cozy','crab','cram','craw','crew','crop','crow','cube','cure','curl','cute',
+  'damp','dare','dark','dart','date','dawn','daze','dead','deaf','deal','dean','dear','debt','deck','deep','deny','desk','dice','diet','dill','dime','dine','dire','dirt','disc','dish','disk','dive','dome','done','door','dorm','dose','dove','down','drag','drip','drop','drum','duel','duke','dull','duly','dump','dune','dusk','dust','duty',
+  'each','earl','earn','ease','east','easy','edge','else','emit','epic','even','evil','exam',
+  'face','fact','fair','fake','fall','fame','farm','fast','fate','fawn','fear','feat','feel','fell','felt','fern','file','fill','film','find','fine','fire','firm','fish','fist','flag','flat','flaw','flea','fled','flew','flip','flock','flow','foam','fold','folk','fond','fool','foot','ford','fore','fork','form','fort','foul','four','free','from','fuel','full','fume','fund','fury','fuse',
+  'gain','gale','gall','game','gang','gape','gate','gave','gawk','gaze','gear','gene','gill','give','glad','glow','glue','gnaw','goal','goat','gone','good','goof','gown','grab','gram','gray','grew','grid','grin','grip','grit','grow','gulf','gush','gust',
+  'hack','hail','hale','hall','halt','hand','hang','hard','hare','harm','harp','hart','have','haze','head','heal','heap','heat','heed','heel','heft','helm','help','herd','here','hero','hewn','hide','high','hike','hill','hint','hire','hole','holy','home','hood','hook','hope','horn','host','hour','hull','hump','hunt','hurl','hurt',
+  'icon','idle','inch','info','into','iris','iron',
+  'jade','jail','jeer','jibe','join','joke','jolt','judge','jump','junk','jury','just',
+  'kale','keen','keep','kilt','kind','king','knew','knit','knob','knot','know',
+  'lace','lack','lady','lake','lamb','lamp','land','lane','lark','lash','last','late','laud','lawn','lazy','lead','leaf','lean','leap','lend','lens','liar','lick','life','lift','like','lime','limp','line','lion','list','live','load','loaf','loan','lock','loft','logo','lone','long','look','loom','loop','loot','lore','lorn','lose','loss','lost','loud','love','luck','lull','lump','lung','lure','lurk','lust',
+  'mace','made','mail','main','make','male','mall','mane','many','mare','mark','mars','mash','mask','mass','mast','mate','math','maze','meal','mean','meat','meet','melt','memo','menu','mere','mesh','mild','mile','milk','mill','mind','mine','mint','mire','miss','mist','mode','mole','monk','mood','moon','moor','more','most','moth','move','much','mule','mull','murk','muse','musk','must','mute',
+  'nail','name','navy','near','neat','neck','need','nest','next','nice','nine','nook','noon','norm','nose','note','noun','nude','numb',
+  'oath','oboe','okay','once','only','open','oval','oven','over',
+  'pace','pack','page','paid','pail','pain','pair','pale','palm','park','part','pass','past','path','peak','peel','peer','pelt','perm','pest','pick','pike','pile','pill','pine','pink','pipe','plan','play','plod','plot','plow','plum','plop','ploy','plum','plus','poem','poet','pole','poll','pond','pony','pool','poor','pore','port','pose','post','pour','prey','prim','prod','prop','prow','pure','push',
+  'race','rack','rage','raid','rail','rain','rake','ramp','rank','rare','rash','rate','rave','read','real','reap','reel','rely','rest','rice','rich','ride','rife','rift','rise','risk','roam','roar','robe','rock','romp','roof','room','root','rope','rose','ruin','rule','rush',
+  'safe','sage','sail','sake','sale','salt','same','sand','sane','sank','scar','seal','seam','seek','seem','seep','self','sell','send','sewn','shed','ship','shoe','shop','shot','show','shut','sick','side','sigh','silk','sill','silo','sing','sink','site','size','skew','skin','skip','slam','slap','slat','sled','slim','slip','slit','slob','slop','slot','slow','slug','slum','smug','snap','snip','snob','snow','soap','sock','sofa','soil','sole','some','soon','sore','sort','soul','soup','sour','span','spar','spin','spit','spot','spur','stab','stag','star','stay','stem','step','stew','stir','stop','stub','stun','such','suit','sulk','sung','sunk','sway','swim','swum',
+  'tale','talk','tall','tame','tame','tang','tape','task','taut','team','tear','tell','tend','tent','term','test','text','than','that','them','then','they','thin','this','thou','tick','tide','tied','tier','tile','time','tiny','tire','toad','tore','torn','toss','tour','town','trap','tray','tree','trio','trim','trip','trod','true','tube','tuft','tuna','tune','turf','turn','twig','twin',
+  'ugly','undo','upon','urge','used',
+  'vale','vary','vast','veal','veer','veil','vein','very','view','vine','visa','void','volt',
+  'wade','wage','wail','wait','wake','walk','wall','wand','wane','want','ward','warm','wart','wave','weak','weal','wean','wear','weed','week','well','welt','went','were','whip','wild','will','wilt','wind','wine','wing','wink','wire','wise','wish','with','wolf','wood','word','wore','work','worm','writ',
+  'yard','yarn','year','yell','yoke','yore','your',
+  'zeal','zero','zinc','zone',
+  // 5-letter
+  'abuse','actor','acute','admit','adopt','adult','after','agent','agree','alarm','album','alert','align','alike','alive','alley','allow','alone','along','aloud','altar','alter','ample','angel','anger','angle','angry','annex','antic','anvil','apart','apple','apply','aptly','arbor','arose','array','aside','asset','atlas','atone','attic','audio','audit',
+  'badge','badly','bagel','baker','basic','basis','batch','beach','beady','beard','beast','began','begin','below','bench','birth','black','blade','blame','bland','blank','blast','blaze','bleak','bleed','blend','bless','blink','block','blood','bloom','bloop','blown','boded','bonus','bored','botch','bowed','boxer','brace','braid','brake','brand','brave','break','breed','brick','bride','brief','brine','bring','broad','broke','brook','broom','broth','brown','bruce','brush','brute','buddy','build','built','built','bunny','burst','byway',
+  'cabin','camel','candy','cargo','carry','catch','cause','cedar','chain','chair','chalk','chaos','charm','chase','cheap','check','cheek','cheer','chess','chest','chief','child','china','choir','chose','cigar','civic','civil','clack','claim','clank','clash','class','clean','clear','clerk','click','cliff','climb','cling','clock','clone','close','cloth','cloud','clown','coach','coast','cocoa','comet','comic','comma','coral','could','count','court','cover','covet','crack','craft','crane','crash','craze','cream','creak','creek','cross','croup','crowd','crown','crush','crust','cycle',
+  'daily','daisy','dance','death','debit','debut','decoy','delay','delta','depot','derby','detox','devil','diary','dirty','disco','disco','diode','donor','doubt','dough','dowdy','dowel','draft','drain','drama','drank','drape','dread','dream','dress','dried','drift','drink','drive','drove','druze','dryer','duchy','dummy','dying',
+  'eager','eagle','early','earth','easel','ebony','eight','eject','elbow','ember','empty','enact','enemy','enjoy','enter','entry','equal','error','essay','event','every','exact','exile','extra',
+  'fable','faced','falls','false','fancy','fatal','fauna','feast','fence','feral','ferry','fetch','fever','fewer','fiber','field','fiend','fifth','fifty','fight','final','finch','first','fixed','fjord','flame','flare','flask','flavor','flesh','flock','flora','floor','flour','flush','flute','focal','force','forge','forum','found','frail','frame','franc','frank','fraud','freak','fresh','froth','froze','fruit','fungi','funny','furry',
+  'gauze','gavel','gawky','giddy','given','gland','glass','gleam','glide','gloom','gloss','glove','glyph','gnome','going','gourd','grace','grade','graft','grain','grand','grant','grape','grasp','grass','grave','graze','greed','greet','groan','groin','grope','gross','group','grout','grove','growl','gruel','gruff','grunt','guava','guard','guest','guide','guild','guile','guilt','guise','gusto',
+  'habit','happy','hardy','haste','haven','heart','heavy','hedge','hello','herbs','heron','hinge','hippo','hoary','holly','honor','horse','hotel','hound','house','human','humus','hurry','hyena',
+  'image','imply','index','indie','inner','input','ivory',
+  'jewel','joust','juice','jumpy','kayak',
+  'knife','knock','knoll','known',
+  'label','lance','large','laser','later','latte','laugh','layer','learn','lease','leave','legal','lemon','level','light','linen','liner','liver','local','lodge','logic','loose','lover','lower','lucky','lunar','lusty','lyric',
+  'magic','major','maker','manor','maple','march','match','mayor','media','mercy','metal','meter','might','minor','model','money','month','moral','mossy','motor','mount','mourn','mouse','mouth','muddy','multi','music',
+  'nasal','naval','nervy','night','ninja','noble','noise','north','noted','novel','nurse','nymph',
+  'occur','ocean','offer','often','olive','onset','order','organ','other','otter','outer','oxide',
+  'panel','panic','paper','patch','pause','paved','pearl','pedal','penny','perch','phase','photo','piano','pirate','pitch','pixel','pizza','place','plain','plane','plant','plate','plaza','plead','pluck','plume','plunge','point','polar','polyp','pouch','pound','power','press','price','pried','prima','prime','prior','prize','probe','prove','prowl','prune','psalm','pudgy','pulse','puppy',
+  'queen','query','queue','quick','quiet','quill','quirk','quota','quote',
+  'radar','radio','rainy','rally','ranch','range','rapid','ratio','reach','realm','rebel','refer','reign','relax','renew','repay','repel','repot','reply','rerun','rider','ridge','risky','rival','river','robin','robot','rocky','rouge','rough','round','route','rover','royal','rural',
+  'sauce','scale','scare','scene','score','scout','screw','seize','sense','serve','seven','sewer','shade','shaft','shake','shale','shame','shape','share','shark','sharp','shave','shawl','sheen','sheep','sheer','shelf','shell','shift','shine','shire','shore','short','siege','silly','since','sixth','sixty','sized','skate','skill','skull','skunk','slash','slate','sleek','sleep','sleet','slick','slice','slide','slope','slosh','small','smart','smell','smile','smite','smoke','snack','snake','sneak','sneer','sniff','snout','snowy','soggy','solid','solve','sorry','sound','south','space','spare','spark','spawn','speak','spear','speed','spell','spend','spice','spill','spine','spoil','spoon','sport','spray','spree','squad','squat','stack','staff','stain','stale','stall','stamp','stand','stark','start','stash','state','stats','steal','steam','steel','steep','steer','stern','stick','stiff','still','stock','stomp','stone','stork','storm','story','stout','stove','strap','straw','stray','strip','strut','stuck','study','stump','style','sugar','super','surge','swamp','swear','sweat','sweep','sweet','swell','swept','swift','sword','swore',
+  'table','taboo','taken','tapir','taste','tatty','teach','thorn','those','three','threw','throw','thumb','tidal','tiger','timer','tired','title','toast','today','token','tombs','tonic','total','touch','tough','towel','tower','toxic','trail','train','trait','tramp','trash','treat','trend','tress','trial','tribe','trick','tried','trout','truck','truly','trunk','truss','trust','truth','tumor','tunny','twerp','twirl','twitch','typed',
+  'umbra','uncle','under','unfed','union','unity','until','upper','upset','urban','using',
+  'valor','value','valve','vapor','video','vigor','viral','virgo','visit','vital','vivid','vocal','vodka','voice','voter','vouch',
+  'wager','wagon','waltz','water','weary','weave','wedge','weedy','weigh','weird','whale','wheat','wheel','where','which','while','white','whole','whose','wider','witch','woman','women','world','worry','worse','worst','worth','would','wound','wrath','write','wrote',
+  'yacht','yearn','yield','young','youth',
+  'zebra','zesty',
+  // 6-letter
+  'absorb','accent','access','aching','across','acting','action','active','actual','adhere','adjust','affect','afford','afraid','agency','agenda','almost','always','amount','animal','answer','anyone','anyway','appeal','appear','around','arrive','asking','attack','author','autumn',
+  'batter','battle','beauty','became','before','behind','better','beyond','border','bottle','bottom','bounce','branch','breath','bridge','bright','broken','burden','butter',
+  'camera','cancel','candle','cannot','castle','caught','center','change','charge','choose','circle','chosen','client','closed','closer','coffee','column','coming','common','corner','course','create','credit','crisis','custom',
+  'damage','danger','decide','deeply','defend','define','degree','demand','depend','desert','design','detail','differ','direct','dollar','double','driven','during',
+  'easily','effect','effort','either','enable','entire','escape','estate','events','except','expect','extend','extent','fabric','fallen','family','faster','father','figure','finger','finish','flight','follow','forest','forget','formal','former','frozen','future',
+  'garden','gather','giving','global','golden','ground','growth','handle','happen','health','heaven','highly','honest','horror','hungry','hunter','impact','indeed','injury','insist','island',
+  'joined','junior','latter','launch','leader','learned','length','likely','listen','little','living','longer','losing','mainly','manner','market','master','matter','medium','member','mental','method','middle','mirror','moment','mother','motion','narrow','nearly','needed','normal','notice','object','office','opened','option','others','output','outside','people','period','permit','phrase','picked','player','please','policy','prefer','pretty','profit','proper','public','pulled','purple','raised','really','reason','record','remain','remind','remove','return','rights','rising','robust','safety','saving','scheme','second','secret','select','series','settle','signal','silent','simple','single','sister','social','source','spring','stable','stance','stands','stands','static','states','status','steady','stored','strict','strong','struck','submit','sudden','suffer','supply','system',
+  'target','theory','things','though','threat','thrown','toward','travel','turned','twelve','twenty','unable','unique','update','visual','volume','weight','window','winter','within','wonder','worker','writes',
+  // 7-letter
+  'ability','absence','account','achieve','address','already','article','assumed','attract','attempt','balance','becomes','belongs','between','billion','borders','brought','captain','certain','chapter','clearly','climate','combine','company','compare','compete','complex','concern','connect','control','correct','council','country','current','default','deliver','despite','develop','digital','display','several','diverse','driving','dynamic','exactly','example','general','history','include','instead','instead','network','nothing','numbers','opinion','outside','pattern','picture','provide','quickly','reality','receive','replace','request','require','respect','results','thought','through','related','science','section','service','setting','society','someone','support','surface','teacher','testing','tonight','typical','usually','version','website','whether','without','working'
+];
+
+// Build T9 digit sequence for each word
+function wordToDigits(word) {
+  let result = '';
+  for (const ch of word.toLowerCase()) {
+    let found = false;
+    for (const [digit, letters] of Object.entries(T9_MAP)) {
+      if (letters.includes(ch)) { result += digit; found = true; break; }
+    }
+    if (!found) return null; // word has unmappable char
+  }
+  return result;
+}
+
+// Precompute: map from digit sequence to array of words
+const digitToWords = {};
+for (const word of WORD_LIST) {
+  const digits = wordToDigits(word);
+  if (!digits) continue;
+  if (!digitToWords[digits]) digitToWords[digits] = [];
+  if (!digitToWords[digits].includes(word)) digitToWords[digits].push(word);
+}
+
+let currentDigits = '';
+
+function pressKey(d) {
+  if (d === 0) return;
+  if (currentDigits.length >= 7) return;
+  currentDigits += String(d);
+  update();
+}
+
+function backspace() {
+  if (!currentDigits.length) return;
+  currentDigits = currentDigits.slice(0,-1);
+  update();
+}
+
+function clearAll() {
+  currentDigits = '';
+  update();
+}
+
+function loadExample(digits) {
+  currentDigits = digits;
+  update();
+}
+
+function update() {
+  // Display digits
+  const dispEl = document.getElementById('digitDisplay');
+  dispEl.textContent = currentDigits || '';
+
+  // Show letter combinations
+  const letters = currentDigits.split('').map(d => T9_MAP[d] || '').join(' · ');
+  document.getElementById('lettersDisplay').textContent = letters;
+
+  if (!currentDigits) {
+    document.getElementById('matchCount').textContent = '0';
+    document.getElementById('results').innerHTML = '<p class="text-gray-500 italic">Enter digits to find words…</p>';
+    return;
+  }
+
+  // Find matching words — only exact length match
+  const matches = digitToWords[currentDigits] || [];
+
+  document.getElementById('matchCount').textContent = matches.length;
+
+  if (!matches.length) {
+    document.getElementById('results').innerHTML = '<p class="text-gray-400 italic">No words found for this digit sequence.</p>';
+    return;
+  }
+
+  // Group by length (should all be same length here, but keep consistent)
+  const byLen = {};
+  for (const w of matches) {
+    const l = w.length;
+    if (!byLen[l]) byLen[l] = [];
+    byLen[l].push(w);
+  }
+
+  let html = '';
+  for (const len of Object.keys(byLen).sort((a,b)=>a-b)) {
+    const words = byLen[len];
+    html += `<div class="mb-3">
+      <div class="text-xs text-gray-500 uppercase tracking-wide mb-1">${escapeHtml(len)}-letter words (${words.length})</div>
+      <div class="flex flex-wrap gap-2">
+        ${words.map(w => `<span class="bg-cyan-900/60 text-cyan-200 rounded px-2 py-1 font-mono text-sm">${escapeHtml(w)}</span>`).join('')}
+      </div>
+    </div>`;
+  }
+  document.getElementById('results').innerHTML = html;
+}
+
+// Keyboard support
+document.addEventListener('keydown', e => {
+  const d = parseInt(e.key);
+  if (d >= 2 && d <= 9) pressKey(d);
+  else if (e.key === 'Backspace') backspace();
+  else if (e.key === 'Delete' || e.key === 'Escape') clearAll();
+});
+
+// Init
+update();
+</script>
+</body>
+</html>
